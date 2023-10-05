@@ -1,7 +1,7 @@
 pub fn Page(ctx) {
-    result = html(
+    result = h.html(
         {},
-        head({ lang: "en" }, title({}, "Precisock About Page")),
-        body({}, h1({}, "Precisock is a web framework for Zig!"))
+        h.head({ lang: "en" }, h.title({}, "Precisock About Page")),
+        h.body({}, h.h1({}, "Precisock is a web framework for Zig!"))
     )
 }
