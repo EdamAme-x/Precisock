@@ -1,6 +1,11 @@
 pub fn Page(ctx) {
     result = html(
         {},
-        head({}, title("Precisock Index Page")),
+        head({ lang: "en" }, title({}, "Precisock Index Page")),
+        body({}, h1({}, "Welcome to Precisock!"))
     )
 }
+
+////                         ////
+// tagName(attrs, ...children) //
+////                         ////
