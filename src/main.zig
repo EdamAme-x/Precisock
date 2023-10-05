@@ -8,9 +8,9 @@ pub const Route = struct {
 pub const Router = struct {
     routes: std.ArrayList(Route),
 
-    pub fn init(allocator: *std.mem.Allocator) Router {
+    pub fn init() Router {
         return Router{
-            .routes = std.ArrayList(Route).init(allocator),
+            .routes = std.ArrayList(Route),
         };
     }
 
@@ -23,7 +23,7 @@ pub const Router = struct {
 };
 
 pub fn main() !void {
-    var router = Router.init(std.heap.c_allocator);
+    var router = Router.init();
 
     try router.route("/index", "index");
     try router.route("/about", "about");
