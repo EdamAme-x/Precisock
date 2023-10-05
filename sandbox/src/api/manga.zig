@@ -1,5 +1,7 @@
 pub fn Api(ctx) {
+    const manga_name = "Naruto";
+    
     result = {
-        name: "Naruto"
+        name: manga_name
     }
 }
