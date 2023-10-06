@@ -46,7 +46,7 @@ fn index(_: *precisock.Request, res: *precisock.Response) !void {
 }
 
 fn sub(_: *precisock.Request, res: *precisock.Response) !void {
-    res.body = h("h1", [_][]u8{{"class", "header"}}, [_]u8{"Hello", "Precisock"});
+    res.body = h("h1", [_][_]u8{{"class", "header"}}, [_]u8{"Hello", "Precisock"});
 }
 
 fn hello(req: *precisock.Request, res: *precisock.Response) !void {
