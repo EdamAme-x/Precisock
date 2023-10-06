@@ -1,1 +1,6 @@
 */zig-cache
+lib/
+zig-out/
+zig-cache/
+book_titles.txt
+tests/db*
