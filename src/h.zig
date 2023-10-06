@@ -1,4 +1,4 @@
-pub fn h(tagName: []const u8, attrs: []type, children: []type) type {
+pub fn h(tagName: []const u8, attrs: [][][]const u8, children: []const u8!void) []const u8 {
     var result = "";
     result += "<";
     result += tagName;

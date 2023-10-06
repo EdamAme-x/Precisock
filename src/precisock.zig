@@ -7,6 +7,7 @@ pub const routing = @import("router.zig");
 pub const request = @import("request.zig");
 pub const listener = @import("listener.zig");
 pub const response = @import("response.zig");
+pub const h = @import("h.zig").h;
 
 pub const Router = routing.Router;
 pub const Request = request.Request;

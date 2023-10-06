@@ -2,6 +2,8 @@ const std = @import("std");
 const precisock = @import("precisock");
 const Allocator = std.mem.Allocator;
 
+const h = precisock.h;
+
 var index_file_contents: []u8 = undefined;
 
 // Started in main.zig which starts 3 servers, on 3 different ports, to showcase
@@ -19,6 +21,7 @@ pub fn start(allocator: Allocator) !void {
     defer allocator.free(index_file_contents);
 
     router.get("/", index);
+    router.get("/sub", sub);
     router.get("/hello", hello);
     router.get("/json/hello/:name", json);
     router.get("/writer/hello/:name", writer);
@@ -40,6 +43,10 @@ fn index(_: *precisock.Request, res: *precisock.Response) !void {
         \\ <li><a href="/cached_static_file">Cached static file</a>
         \\ <li><a href="http://localhost:5883/increment">Global shared state</a>
     ;
+}
+
+fn sub(_: *precisock.Request, res: *precisock.Response) !void {
+    res.body = h("h1", [_][] const u8{{"class", "header"}}, [_][] const u8{"Hello", "Precisock"});
 }
 
 fn hello(req: *precisock.Request, res: *precisock.Response) !void {
