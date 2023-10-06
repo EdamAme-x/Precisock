@@ -1,7 +1,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
-const httpz = @import("httpz.zig");
+const precisock = @import("precisock.zig");
 const KeyValue = @import("key_value.zig").KeyValue;
 
 const mem = std.mem;
@@ -33,8 +33,8 @@ pub const Response = struct {
     headers: KeyValue,
 
     // The content type. Use header("content-type", value) for a content type
-    // which isn't available in the httpz.ContentType enum.
-    content_type: ?httpz.ContentType,
+    // which isn't available in the precisock.ContentType enum.
+    content_type: ?precisock.ContentType,
 
     // A buffer that exists for the entire lifetime of the response. As we piece
     // our header together (e.g. looping through the headers to create NAME: value\r\n)
@@ -91,7 +91,7 @@ pub const Response = struct {
 
     pub fn json(self: *Self, value: anytype, options: std.json.StringifyOptions) !void {
         try std.json.stringify(value, options, Writer.init(self));
-        self.content_type = httpz.ContentType.JSON;
+        self.content_type = precisock.ContentType.JSON;
     }
 
     pub fn header(self: *Self, name: []const u8, value: []const u8) void {
@@ -519,7 +519,7 @@ test "response: content_type" {
     defer testCleanup(res, s);
 
     {
-        res.content_type = httpz.ContentType.WEBP;
+        res.content_type = precisock.ContentType.WEBP;
         try res.write();
         try t.expectString("HTTP/1.1 200\r\nContent-Type: image/webp\r\nContent-Length: 0\r\n\r\n", s.received.items);
     }
@@ -663,7 +663,7 @@ test "response: chunked" {
         s.reset();
         res.reset();
         res.status = 1;
-        res.content_type = httpz.ContentType.XML;
+        res.content_type = precisock.ContentType.XML;
         res.header("Test", "Chunked");
         try res.chunk("Hello");
         try res.chunk("another slightly bigger chunk");

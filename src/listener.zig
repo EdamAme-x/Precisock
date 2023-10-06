@@ -1,7 +1,7 @@
 const std = @import("std");
 const t = @import("t.zig");
 const builtin = @import("builtin");
-const httpz = @import("httpz.zig");
+const precisock = @import("precisock.zig");
 
 const Pool = @import("pool.zig").Pool;
 const Config = @import("config.zig").Config;
@@ -16,8 +16,8 @@ const net = std.net;
 
 const ReqResPool = Pool(*RequestResponsePair, RequestResponsePairConfig);
 
-pub fn listen(comptime S: type, httpz_allocator: Allocator, app_allocator: Allocator, server: S, config: Config) !void {
-    var reqResPool = try initReqResPool(httpz_allocator, app_allocator, &config);
+pub fn listen(comptime S: type, precisock_allocator: Allocator, app_allocator: Allocator, server: S, config: Config) !void {
+    var reqResPool = try initReqResPool(precisock_allocator, app_allocator, &config);
     defer reqResPool.deinit();
 
     var socket = net.StreamServer.init(.{
@@ -47,7 +47,7 @@ pub fn listen(comptime S: type, httpz_allocator: Allocator, app_allocator: Alloc
             const c: Conn = if (comptime builtin.is_test) undefined else conn;
             const args = .{ S, server, c, &reqResPool };
             if (comptime std.io.is_async) {
-                try Loop.instance.?.runDetached(httpz_allocator, handleConnection, args);
+                try Loop.instance.?.runDetached(precisock_allocator, handleConnection, args);
             } else {
                 if (config.thread_pool > 0) {
                     try thread_pool.spawn(handleConnection, args);
@@ -62,11 +62,11 @@ pub fn listen(comptime S: type, httpz_allocator: Allocator, app_allocator: Alloc
     }
 }
 
-pub fn initReqResPool(httpz_allocator: Allocator, app_allocator: Allocator, config: *const Config) !ReqResPool {
-    return try ReqResPool.init(httpz_allocator, config.pool, initReqRes, .{
+pub fn initReqResPool(precisock_allocator: Allocator, app_allocator: Allocator, config: *const Config) !ReqResPool {
+    return try ReqResPool.init(precisock_allocator, config.pool, initReqRes, .{
         .config = config,
         .app_allocator = app_allocator,
-        .httpz_allocator = httpz_allocator,
+        .precisock_allocator = precisock_allocator,
     });
 }
 
@@ -112,7 +112,7 @@ pub fn handleConnection(comptime S: type, server: S, conn: Conn, reqResPool: *Re
     }
 }
 
-fn requestParseError(err: anyerror, res: *httpz.Response) void {
+fn requestParseError(err: anyerror, res: *precisock.Response) void {
     switch (err) {
         error.UnknownMethod, error.InvalidRequestTarget, error.UnknownProtocol, error.UnsupportedProtocol, error.InvalidHeaderLine => {
             res.status = 400;
@@ -134,45 +134,45 @@ fn requestParseError(err: anyerror, res: *httpz.Response) void {
 // Grouping them this way means we can create 1 arena per pair.
 const RequestResponsePair = struct {
     allocator: Allocator,
-    request: *httpz.Request,
-    response: *httpz.Response,
+    request: *precisock.Request,
+    response: *precisock.Response,
     arena: *std.heap.ArenaAllocator,
 
     const Self = @This();
 
-    pub fn deinit(self: *Self, httpz_allocator: Allocator) void {
-        self.request.deinit(httpz_allocator);
-        httpz_allocator.destroy(self.request);
+    pub fn deinit(self: *Self, precisock_allocator: Allocator) void {
+        self.request.deinit(precisock_allocator);
+        precisock_allocator.destroy(self.request);
 
-        self.response.deinit(httpz_allocator);
-        httpz_allocator.destroy(self.response);
+        self.response.deinit(precisock_allocator);
+        precisock_allocator.destroy(self.response);
         self.arena.deinit();
-        httpz_allocator.destroy(self.arena);
-        httpz_allocator.destroy(self);
+        precisock_allocator.destroy(self.arena);
+        precisock_allocator.destroy(self);
     }
 };
 
 const RequestResponsePairConfig = struct {
     config: *const Config,
     app_allocator: Allocator,
-    httpz_allocator: Allocator,
+    precisock_allocator: Allocator,
 };
 
 // Should not be called directly, but initialized through a pool
 pub fn initReqRes(c: RequestResponsePairConfig) !*RequestResponsePair {
-    const httpz_allocator = c.httpz_allocator;
+    const precisock_allocator = c.precisock_allocator;
 
-    var arena = try httpz_allocator.create(std.heap.ArenaAllocator);
+    var arena = try precisock_allocator.create(std.heap.ArenaAllocator);
     arena.* = std.heap.ArenaAllocator.init(c.app_allocator);
     const app_allocator = arena.allocator();
 
-    var req = try httpz_allocator.create(httpz.Request);
-    try req.init(httpz_allocator, app_allocator, c.config.request);
+    var req = try precisock_allocator.create(precisock.Request);
+    try req.init(precisock_allocator, app_allocator, c.config.request);
 
-    var res = try httpz_allocator.create(httpz.Response);
-    try res.init(httpz_allocator, app_allocator, c.config.response);
+    var res = try precisock_allocator.create(precisock.Response);
+    try res.init(precisock_allocator, app_allocator, c.config.response);
 
-    var pair = try httpz_allocator.create(RequestResponsePair);
+    var pair = try precisock_allocator.create(RequestResponsePair);
     pair.* = .{
         .arena = arena,
         .request = req,
@@ -183,4 +183,4 @@ pub fn initReqRes(c: RequestResponsePairConfig) !*RequestResponsePair {
     return pair;
 }
 
-// All of this logic is largely tested in httpz.zig
+// All of this logic is largely tested in precisock.zig

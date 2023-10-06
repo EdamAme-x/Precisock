@@ -1,5 +1,5 @@
 const std = @import("std");
-const httpz = @import("httpz");
+const precisock = @import("precisock");
 const Allocator = std.mem.Allocator;
 
 // Our global state (just like global.zig)
@@ -15,7 +15,7 @@ const RequestContext = struct {
     user_id: ?[]const u8,
     global: *GlobalContext,
 
-    pub fn increment(self: *Self, _: *httpz.Request, res: *httpz.Response) !void {
+    pub fn increment(self: *Self, _: *precisock.Request, res: *precisock.Response) !void {
         // we don't actually do anything with ctx.user_id
         // except make sure it's been set. This could be common in a route
         // where any user can take an action as long as they're logged in.
@@ -27,7 +27,7 @@ const RequestContext = struct {
         self.global.hits = hits;
         self.global.l.unlock();
 
-        res.content_type = httpz.ContentType.TEXT;
+        res.content_type = precisock.ContentType.TEXT;
         var out = try std.fmt.allocPrint(res.arena, "{d} hits", .{hits});
         res.body = out;
     }
@@ -35,7 +35,7 @@ const RequestContext = struct {
 
 pub fn start(allocator: Allocator) !void {
     var ctx = GlobalContext{};
-    var server = try httpz.ServerCtx(*GlobalContext, *RequestContext).init(allocator, .{ .pool = .{ .min = 20 }, .port = 5884 }, &ctx);
+    var server = try precisock.ServerCtx(*GlobalContext, *RequestContext).init(allocator, .{ .pool = .{ .min = 20 }, .port = 5884 }, &ctx);
     defer server.deinit();
     server.dispatcher(dispatcher);
     var router = server.router();
@@ -43,12 +43,12 @@ pub fn start(allocator: Allocator) !void {
     return server.listen();
 }
 
-fn notAuthorized(res: *httpz.Response) void {
+fn notAuthorized(res: *precisock.Response) void {
     res.status = 401;
     res.body = "Not authorized";
 }
 
-fn dispatcher(global: *GlobalContext, action: httpz.Action(*RequestContext), req: *httpz.Request, res: *httpz.Response) !void {
+fn dispatcher(global: *GlobalContext, action: precisock.Action(*RequestContext), req: *precisock.Request, res: *precisock.Response) !void {
     // If we you need to allocate memory here, consider using req.arena
 
     // this is obviously a dummy example where we just trust the "user" header

@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const httpz = @import("httpz.zig");
+const precisock = @import("precisock.zig");
 const Params = @import("params.zig").Params;
 const Request = @import("request.zig").Request;
 const Response = @import("response.zig").Response;
@@ -9,7 +9,7 @@ const Allocator = std.mem.Allocator;
 const StringHashMap = std.StringHashMap;
 
 pub fn Config(comptime G: type, comptime R: type) type {
-    const Dispatcher = httpz.Dispatcher(G, R);
+    const Dispatcher = precisock.Dispatcher(G, R);
     return struct {
         ctx: ?G = null,
         dispatcher: ?Dispatcher = null,
@@ -17,9 +17,9 @@ pub fn Config(comptime G: type, comptime R: type) type {
 }
 
 pub fn Router(comptime G: type, comptime R: type) type {
-    const Action = httpz.Action(R);
-    const Dispatcher = httpz.Dispatcher(G, R);
-    const DispatchableAction = httpz.DispatchableAction(G, R);
+    const Action = precisock.Action(R);
+    const Dispatcher = precisock.Dispatcher(G, R);
+    const DispatchableAction = precisock.DispatchableAction(G, R);
 
     return struct {
         _arena: *std.heap.ArenaAllocator,
@@ -75,15 +75,15 @@ pub fn Router(comptime G: type, comptime R: type) type {
             self._default_ctx = c;
         }
 
-        pub fn route(self: Self, method: httpz.Method, url: []const u8, params: *Params) ?DispatchableAction {
+        pub fn route(self: Self, method: precisock.Method, url: []const u8, params: *Params) ?DispatchableAction {
             return switch (method) {
-                httpz.Method.GET => getRoute(DispatchableAction, self._get, url, params),
-                httpz.Method.POST => getRoute(DispatchableAction, self._post, url, params),
-                httpz.Method.PUT => getRoute(DispatchableAction, self._put, url, params),
-                httpz.Method.DELETE => getRoute(DispatchableAction, self._delete, url, params),
-                httpz.Method.PATCH => getRoute(DispatchableAction, self._patch, url, params),
-                httpz.Method.HEAD => getRoute(DispatchableAction, self._head, url, params),
-                httpz.Method.OPTIONS => getRoute(DispatchableAction, self._options, url, params),
+                precisock.Method.GET => getRoute(DispatchableAction, self._get, url, params),
+                precisock.Method.POST => getRoute(DispatchableAction, self._post, url, params),
+                precisock.Method.PUT => getRoute(DispatchableAction, self._put, url, params),
+                precisock.Method.DELETE => getRoute(DispatchableAction, self._delete, url, params),
+                precisock.Method.PATCH => getRoute(DispatchableAction, self._patch, url, params),
+                precisock.Method.HEAD => getRoute(DispatchableAction, self._head, url, params),
+                precisock.Method.OPTIONS => getRoute(DispatchableAction, self._options, url, params),
             };
         }
 
@@ -254,7 +254,7 @@ pub fn Router(comptime G: type, comptime R: type) type {
 }
 
 pub fn Group(comptime G: type, comptime R: type) type {
-    const Action = httpz.Action(R);
+    const Action = precisock.Action(R);
 
     return struct {
         _aa: Allocator,
@@ -541,20 +541,20 @@ test "route: root" {
     router.all("/all", testRoute4);
 
     var urls = .{ "/", "/other", "/all" };
-    try t.expectEqual(&testRoute1, router.route(httpz.Method.GET, "", &params).?.action);
-    try t.expectEqual(&testRoute2, router.route(httpz.Method.PUT, "", &params).?.action);
-    try t.expectEqual(&testRoute3, router.route(httpz.Method.POST, "", &params).?.action);
+    try t.expectEqual(&testRoute1, router.route(precisock.Method.GET, "", &params).?.action);
+    try t.expectEqual(&testRoute2, router.route(precisock.Method.PUT, "", &params).?.action);
+    try t.expectEqual(&testRoute3, router.route(precisock.Method.POST, "", &params).?.action);
 
-    try t.expectEqual(&testRoute1, router.route(httpz.Method.GET, urls[0], &params).?.action);
-    try t.expectEqual(&testRoute2, router.route(httpz.Method.PUT, urls[0], &params).?.action);
-    try t.expectEqual(&testRoute3, router.route(httpz.Method.POST, urls[0], &params).?.action);
+    try t.expectEqual(&testRoute1, router.route(precisock.Method.GET, urls[0], &params).?.action);
+    try t.expectEqual(&testRoute2, router.route(precisock.Method.PUT, urls[0], &params).?.action);
+    try t.expectEqual(&testRoute3, router.route(precisock.Method.POST, urls[0], &params).?.action);
 
-    try t.expectEqual(@as(?httpz.DispatchableAction(void, void), null), router.route(httpz.Method.GET, urls[1], &params));
-    try t.expectEqual(@as(?httpz.DispatchableAction(void, void), null), router.route(httpz.Method.DELETE, urls[0], &params));
+    try t.expectEqual(@as(?precisock.DispatchableAction(void, void), null), router.route(precisock.Method.GET, urls[1], &params));
+    try t.expectEqual(@as(?precisock.DispatchableAction(void, void), null), router.route(precisock.Method.DELETE, urls[0], &params));
 
     // test "all" route
-    inline for (@typeInfo(httpz.Method).Enum.fields) |field| {
-        const m = @as(httpz.Method, @enumFromInt(field.value));
+    inline for (@typeInfo(precisock.Method).Enum.fields) |field| {
+        const m = @as(precisock.Method, @enumFromInt(field.value));
         try t.expectEqual(&testRoute4, router.route(m, urls[2], &params).?.action);
     }
 }
@@ -571,19 +571,19 @@ test "route: static" {
     {
         const urls = .{ "hello/world", "/hello/world", "hello/world/", "/hello/world/" };
         // all trailing/leading slash combinations
-        try t.expectEqual(&testRoute1, router.route(httpz.Method.GET, urls[0], &params).?.action);
-        try t.expectEqual(&testRoute1, router.route(httpz.Method.GET, urls[1], &params).?.action);
-        try t.expectEqual(&testRoute1, router.route(httpz.Method.GET, urls[2], &params).?.action);
+        try t.expectEqual(&testRoute1, router.route(precisock.Method.GET, urls[0], &params).?.action);
+        try t.expectEqual(&testRoute1, router.route(precisock.Method.GET, urls[1], &params).?.action);
+        try t.expectEqual(&testRoute1, router.route(precisock.Method.GET, urls[2], &params).?.action);
     }
 
     {
         const urls = .{ "over/9000", "/over/9000", "over/9000/", "/over/9000/" };
         // all trailing/leading slash combinations
         inline for (urls) |url| {
-            try t.expectEqual(&testRoute2, router.route(httpz.Method.GET, url, &params).?.action);
+            try t.expectEqual(&testRoute2, router.route(precisock.Method.GET, url, &params).?.action);
 
             // different method
-            try t.expectEqual(@as(?httpz.DispatchableAction(void, void), null), router.route(httpz.Method.PUT, url, &params));
+            try t.expectEqual(@as(?precisock.DispatchableAction(void, void), null), router.route(precisock.Method.PUT, url, &params));
         }
     }
 
@@ -591,7 +591,7 @@ test "route: static" {
         // random not found
         const urls = .{ "over/9000!", "over/ 9000" };
         inline for (urls) |url| {
-            try t.expectEqual(@as(?httpz.DispatchableAction(void, void), null), router.route(httpz.Method.GET, url, &params));
+            try t.expectEqual(@as(?precisock.DispatchableAction(void, void), null), router.route(precisock.Method.GET, url, &params));
         }
     }
 }
@@ -611,7 +611,7 @@ test "route: params" {
 
     {
         // root param
-        try t.expectEqual(&testRoute1, router.route(httpz.Method.GET, "info", &params).?.action);
+        try t.expectEqual(&testRoute1, router.route(precisock.Method.GET, "info", &params).?.action);
         try t.expectEqual(@as(usize, 1), params.len);
         try t.expectString("info", params.get("p1").?);
     }
@@ -619,7 +619,7 @@ test "route: params" {
     {
         // nested param
         params.reset();
-        try t.expectEqual(&testRoute2, router.route(httpz.Method.GET, "/users/33", &params).?.action);
+        try t.expectEqual(&testRoute2, router.route(precisock.Method.GET, "/users/33", &params).?.action);
         try t.expectEqual(@as(usize, 1), params.len);
         try t.expectString("33", params.get("p2").?);
     }
@@ -627,12 +627,12 @@ test "route: params" {
     {
         // nested param with statix suffix
         params.reset();
-        try t.expectEqual(&testRoute3, router.route(httpz.Method.GET, "/users/9/fav", &params).?.action);
+        try t.expectEqual(&testRoute3, router.route(precisock.Method.GET, "/users/9/fav", &params).?.action);
         try t.expectEqual(@as(usize, 1), params.len);
         try t.expectString("9", params.get("p2").?);
 
         params.reset();
-        try t.expectEqual(&testRoute4, router.route(httpz.Method.GET, "/users/9/like", &params).?.action);
+        try t.expectEqual(&testRoute4, router.route(precisock.Method.GET, "/users/9/like", &params).?.action);
         try t.expectEqual(@as(usize, 1), params.len);
         try t.expectString("9", params.get("p2").?);
     }
@@ -640,13 +640,13 @@ test "route: params" {
     {
         // nested params
         params.reset();
-        try t.expectEqual(&testRoute5, router.route(httpz.Method.GET, "/users/u1/fav/blue", &params).?.action);
+        try t.expectEqual(&testRoute5, router.route(precisock.Method.GET, "/users/u1/fav/blue", &params).?.action);
         try t.expectEqual(@as(usize, 2), params.len);
         try t.expectString("u1", params.get("p2").?);
         try t.expectString("blue", params.get("p3").?);
 
         params.reset();
-        try t.expectEqual(&testRoute6, router.route(httpz.Method.GET, "/users/u3/like/tea", &params).?.action);
+        try t.expectEqual(&testRoute6, router.route(precisock.Method.GET, "/users/u3/like/tea", &params).?.action);
         try t.expectEqual(@as(usize, 2), params.len);
         try t.expectString("u3", params.get("p2").?);
         try t.expectString("tea", params.get("p3").?);
@@ -655,10 +655,10 @@ test "route: params" {
     {
         // not_found
         params.reset();
-        try t.expectEqual(@as(?httpz.DispatchableAction(void, void), null), router.route(httpz.Method.GET, "/users/u1/other", &params));
+        try t.expectEqual(@as(?precisock.DispatchableAction(void, void), null), router.route(precisock.Method.GET, "/users/u1/other", &params));
         try t.expectEqual(@as(usize, 0), params.len);
 
-        try t.expectEqual(@as(?httpz.DispatchableAction(void, void), null), router.route(httpz.Method.GET, "/users/u1/favss/blue", &params));
+        try t.expectEqual(@as(?precisock.DispatchableAction(void, void), null), router.route(precisock.Method.GET, "/users/u1/favss/blue", &params));
         try t.expectEqual(@as(usize, 0), params.len);
     }
 }
@@ -678,7 +678,7 @@ test "route: glob" {
         // root glob
         const urls = .{ "/anything", "/this/could/be/anything", "/" };
         inline for (urls) |url| {
-            try t.expectEqual(&testRoute1, router.route(httpz.Method.GET, url, &params).?.action);
+            try t.expectEqual(&testRoute1, router.route(precisock.Method.GET, url, &params).?.action);
             try t.expectEqual(@as(usize, 0), params.len);
         }
     }
@@ -687,7 +687,7 @@ test "route: glob" {
         // nest glob
         const urls = .{ "/users/", "/users", "/users/hello", "/users/could/be/anything" };
         inline for (urls) |url| {
-            try t.expectEqual(&testRoute2, router.route(httpz.Method.GET, url, &params).?.action);
+            try t.expectEqual(&testRoute2, router.route(precisock.Method.GET, url, &params).?.action);
             try t.expectEqual(@as(usize, 0), params.len);
         }
     }
@@ -696,14 +696,14 @@ test "route: glob" {
         // nest glob specific
         const urls = .{ "/users/hello/test", "/users/x/test" };
         inline for (urls) |url| {
-            try t.expectEqual(&testRoute3, router.route(httpz.Method.GET, url, &params).?.action);
+            try t.expectEqual(&testRoute3, router.route(precisock.Method.GET, url, &params).?.action);
             try t.expectEqual(@as(usize, 0), params.len);
         }
     }
 
     {
         // nest glob specific
-        try t.expectEqual(&testRoute4, router.route(httpz.Method.GET, "/users/other/test", &params).?.action);
+        try t.expectEqual(&testRoute4, router.route(precisock.Method.GET, "/users/other/test", &params).?.action);
         try t.expectEqual(@as(usize, 0), params.len);
     }
 }
@@ -724,22 +724,22 @@ test "route: glob" {
 // 	router.get("/hello/users/test", 2, .{});
 
 // 	{
-// 		try t.expectEqual(@as(u32, 1), router.route(httpz.Method.GET, "/x/users", &params));
+// 		try t.expectEqual(@as(u32, 1), router.route(precisock.Method.GET, "/x/users", &params));
 // 		try t.expectEqual(@as(usize, 1), params.len);
 // 		try t.expectString("x", params.get("any"));
 
 // 		params.reset();
-// 		try t.expectEqual(@as(u32, 2), router.route(httpz.Method.GET, "/hello/users/test", &params));
+// 		try t.expectEqual(@as(u32, 2), router.route(precisock.Method.GET, "/hello/users/test", &params));
 // 		try t.expectEqual(@as(usize, 0), params.len);
 
 // 		params.reset();
-// 		try t.expectEqual(@as(u32, 1), router.route(httpz.Method.GET, "/hello/users", &params));
+// 		try t.expectEqual(@as(u32, 1), router.route(precisock.Method.GET, "/hello/users", &params));
 // 		try t.expectEqual(@as(usize, 1), params.len);
 // 		try t.expectString("hello", params.get("any"));
 // 	}
 // }
 
-fn testDispatcher1(_: httpz.Action(void), _: *Request, _: *Response) anyerror!void {}
+fn testDispatcher1(_: precisock.Action(void), _: *Request, _: *Response) anyerror!void {}
 fn testRoute1(_: *Request, _: *Response) anyerror!void {}
 fn testRoute2(_: *Request, _: *Response) anyerror!void {}
 fn testRoute3(_: *Request, _: *Response) anyerror!void {}

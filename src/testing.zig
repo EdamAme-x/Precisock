@@ -2,22 +2,22 @@
 // request and parse responses
 const std = @import("std");
 const t = @import("t.zig");
-const httpz = @import("httpz.zig");
+const precisock = @import("precisock.zig");
 
 const ArrayList = std.ArrayList;
 const Allocator = std.mem.Allocator;
 
-pub fn init(config: httpz.Config) Testing {
+pub fn init(config: precisock.Config) Testing {
     var arena = t.allocator.create(std.heap.ArenaAllocator) catch unreachable;
     arena.* = std.heap.ArenaAllocator.init(t.allocator);
 
     var aa = arena.allocator();
-    var req = aa.create(httpz.Request) catch unreachable;
+    var req = aa.create(precisock.Request) catch unreachable;
     req.init(aa, aa, config.request) catch unreachable;
-    req.url = httpz.Url.parse("/");
+    req.url = precisock.Url.parse("/");
     req.reset();
 
-    var res = aa.create(httpz.Response) catch unreachable;
+    var res = aa.create(precisock.Response) catch unreachable;
     res.init(aa, aa, config.response) catch unreachable;
     res.stream = t.Stream.initWithAllocator(aa);
     res.reset();
@@ -32,8 +32,8 @@ pub fn init(config: httpz.Config) Testing {
 
 pub const Testing = struct {
     _arena: *std.heap.ArenaAllocator,
-    req: *httpz.Request,
-    res: *httpz.Response,
+    req: *precisock.Request,
+    res: *precisock.Response,
     arena: std.mem.Allocator,
     parsed_response: ?Response = null,
 
@@ -84,7 +84,7 @@ pub const Testing = struct {
     }
 
     pub fn url(self: *Self, u: []const u8) void {
-        self.req.url = httpz.Url.parse(u);
+        self.req.url = precisock.Url.parse(u);
     }
 
     pub fn param(self: *Self, name: []const u8, value: []const u8) void {

@@ -196,7 +196,7 @@ pub fn ServerCtx(comptime G: type, comptime R: type) type {
         ctx: G,
         config: Config,
         app_allocator: Allocator,
-        httpz_allocator: Allocator,
+        precisock_allocator: Allocator,
         _cors_origin: ?[]const u8,
         _router: Router(G, R),
         _errorHandler: ErrorHandlerAction(G),
@@ -221,7 +221,7 @@ pub fn ServerCtx(comptime G: type, comptime R: type) type {
                 .ctx = ctx,
                 .config = var_config,
                 .app_allocator = allocator,
-                .httpz_allocator = allocator,
+                .precisock_allocator = allocator,
                 ._errorHandler = erh,
                 ._notFoundHandler = nfh,
                 ._router = try Router(G, R).init(allocator, dd, ctx),
@@ -230,11 +230,11 @@ pub fn ServerCtx(comptime G: type, comptime R: type) type {
         }
 
         pub fn deinit(self: *Self) void {
-            self._router.deinit(self.httpz_allocator);
+            self._router.deinit(self.precisock_allocator);
         }
 
         pub fn listen(self: *Self) !void {
-            try listener.listen(*ServerCtx(G, R), self.httpz_allocator, self.app_allocator, self, self.config);
+            try listener.listen(*ServerCtx(G, R), self.precisock_allocator, self.app_allocator, self, self.config);
         }
 
         pub fn listenInNewThread(self: *Self) !std.Thread {
@@ -273,7 +273,7 @@ pub fn ServerCtx(comptime G: type, comptime R: type) type {
         fn defaultErrorHandler(req: *Request, res: *Response, err: anyerror) void {
             res.status = 500;
             res.body = "Internal Server Error";
-            std.log.warn("httpz: unhandled exception for request: {s}\nErr: {}", .{ req.url.raw, err });
+            std.log.warn("precisock: unhandled exception for request: {s}\nErr: {}", .{ req.url.raw, err });
         }
 
         fn defaultDispatcher(action: Action(R), req: *Request, res: *Response) !void {
@@ -357,7 +357,7 @@ test {
     std.testing.refAllDecls(@This());
 }
 
-test "httpz: invalid request (not enough data, assume closed)" {
+test "precisock: invalid request (not enough data, assume closed)" {
     var stream = t.Stream.init();
     defer stream.deinit();
     _ = stream.add("GET / HTTP/1.1\r");
@@ -370,7 +370,7 @@ test "httpz: invalid request (not enough data, assume closed)" {
     try t.expectEqual(@as(usize, 0), stream.received.items.len);
 }
 
-test "httpz: invalid request" {
+test "precisock: invalid request" {
     var stream = t.Stream.init();
     defer stream.deinit();
     _ = stream.add("TEA / HTTP/1.1\r\n\r\n");
@@ -382,7 +382,7 @@ test "httpz: invalid request" {
     try t.expectString("HTTP/1.1 400\r\nContent-Length: 15\r\n\r\nInvalid Request", stream.received.items);
 }
 
-test "httpz: no route" {
+test "precisock: no route" {
     var stream = t.Stream.init();
     defer stream.deinit();
     _ = stream.add("GET / HTTP/1.1\r\n\r\n");
@@ -394,7 +394,7 @@ test "httpz: no route" {
     try t.expectString("HTTP/1.1 404\r\nContent-Length: 9\r\n\r\nNot Found", stream.received.items);
 }
 
-test "httpz: no route with custom notFound handler" {
+test "precisock: no route with custom notFound handler" {
     var stream = t.Stream.init();
     defer stream.deinit();
     _ = stream.add("GET / HTTP/1.1\r\n\r\n");
@@ -407,7 +407,7 @@ test "httpz: no route with custom notFound handler" {
     try t.expectString("HTTP/1.1 404\r\nCtx: 3\r\nContent-Length: 10\r\n\r\nwhere lah?", stream.received.items);
 }
 
-test "httpz: unhandled exception" {
+test "precisock: unhandled exception" {
     std.testing.log_level = .err;
     defer std.testing.log_level = .warn;
 
@@ -423,7 +423,7 @@ test "httpz: unhandled exception" {
     try t.expectString("HTTP/1.1 500\r\nContent-Length: 21\r\n\r\nInternal Server Error", stream.received.items);
 }
 
-test "httpz: unhandled exception with custom error handler" {
+test "precisock: unhandled exception with custom error handler" {
     std.testing.log_level = .err;
     defer std.testing.log_level = .warn;
 
@@ -440,7 +440,7 @@ test "httpz: unhandled exception with custom error handler" {
     try t.expectString("HTTP/1.1 500\r\nCtx: 4\r\nContent-Length: 29\r\n\r\n#/why/arent/tags/hierarchical", stream.received.items);
 }
 
-test "httpz: route params" {
+test "precisock: route params" {
     var stream = t.Stream.init();
     defer stream.deinit();
     _ = stream.add("GET /api/v2/users/9001 HTTP/1.1\r\n\r\n");
@@ -453,7 +453,7 @@ test "httpz: route params" {
     try t.expectString("HTTP/1.1 200\r\nContent-Length: 20\r\n\r\nversion=v2,user=9001", stream.received.items);
 }
 
-test "httpz: request and response headers" {
+test "precisock: request and response headers" {
     var stream = t.Stream.init();
     defer stream.deinit();
     _ = stream.add("GET /test/headers HTTP/1.1\r\nHeader-Name: Header-Value\r\n\r\n");
@@ -466,7 +466,7 @@ test "httpz: request and response headers" {
     try t.expectString("HTTP/1.1 200\r\nCtx: 88\r\nEcho: Header-Value\r\nother: test-value\r\nContent-Length: 0\r\n\r\n", stream.received.items);
 }
 
-test "httpz: content-length body" {
+test "precisock: content-length body" {
     var stream = t.Stream.init();
     defer stream.deinit();
     _ = stream.add("GET /test/body/cl HTTP/1.1\r\nHeader-Name: Header-Value\r\nContent-Length: 4\r\n\r\nabcz");
@@ -479,7 +479,7 @@ test "httpz: content-length body" {
     try t.expectString("HTTP/1.1 200\r\nEcho-Body: abcz\r\nContent-Length: 0\r\n\r\n", stream.received.items);
 }
 
-test "httpz: json response" {
+test "precisock: json response" {
     var stream = t.Stream.init();
     defer stream.deinit();
     _ = stream.add("GET /test/json HTTP/1.1\r\nContent-Length: 0\r\n\r\n");
@@ -492,7 +492,7 @@ test "httpz: json response" {
     try t.expectString("HTTP/1.1 201\r\nContent-Type: application/json\r\nContent-Length: 26\r\n\r\n{\"over\":9000,\"teg\":\"soup\"}", stream.received.items);
 }
 
-test "httpz: query" {
+test "precisock: query" {
     var stream = t.Stream.init();
     defer stream.deinit();
     _ = stream.add("GET /test/query?fav=keemun%20te%61%21 HTTP/1.1\r\nContent-Length: 0\r\n\r\n");
@@ -505,7 +505,7 @@ test "httpz: query" {
     try t.expectString("HTTP/1.1 200\r\nContent-Length: 11\r\n\r\nkeemun tea!", stream.received.items);
 }
 
-test "httpz: custom dispatcher" {
+test "precisock: custom dispatcher" {
     var stream = t.Stream.init();
     defer stream.deinit();
 
@@ -519,7 +519,7 @@ test "httpz: custom dispatcher" {
     try t.expectString("HTTP/1.1 200\r\ndispatcher: test-dispatcher-1\r\nContent-Length: 6\r\n\r\naction", stream.received.items);
 }
 
-test "httpz: router groups" {
+test "precisock: router groups" {
     var srv = ServerCtx(i32, i32).init(t.allocator, .{}, 33) catch unreachable;
     defer srv.deinit();
 
@@ -615,8 +615,8 @@ test "httpz: router groups" {
     }
 }
 
-test "httpz: CORS" {
-    var srv = Server().init(t.allocator, .{ .cors = .{ .origin = "httpz.local", .headers = "content-type", .methods = "GET,POST", .max_age = "300" } }) catch unreachable;
+test "precisock: CORS" {
+    var srv = Server().init(t.allocator, .{ .cors = .{ .origin = "precisock.local", .headers = "content-type", .methods = "GET,POST", .max_age = "300" } }) catch unreachable;
     defer srv.deinit();
 
     {
@@ -630,7 +630,7 @@ test "httpz: CORS" {
         try t.expectEqual(true, res.headers.get("Access-Control-Max-Age") == null);
         try t.expectEqual(true, res.headers.get("Access-Control-Allow-Methods") == null);
         try t.expectEqual(true, res.headers.get("Access-Control-Allow-Headers") == null);
-        try t.expectString("httpz.local", res.headers.get("Access-Control-Allow-Origin").?);
+        try t.expectString("precisock.local", res.headers.get("Access-Control-Allow-Origin").?);
     }
 
     {
@@ -646,7 +646,7 @@ test "httpz: CORS" {
         try t.expectEqual(true, res.headers.get("Access-Control-Max-Age") == null);
         try t.expectEqual(true, res.headers.get("Access-Control-Allow-Methods") == null);
         try t.expectEqual(true, res.headers.get("Access-Control-Allow-Headers") == null);
-        try t.expectString("httpz.local", res.headers.get("Access-Control-Allow-Origin").?);
+        try t.expectString("precisock.local", res.headers.get("Access-Control-Allow-Origin").?);
     }
 
     {
@@ -659,7 +659,7 @@ test "httpz: CORS" {
         var res = try testing.parse(stream.received.items);
         defer res.deinit();
 
-        try t.expectString("httpz.local", res.headers.get("Access-Control-Allow-Origin").?);
+        try t.expectString("precisock.local", res.headers.get("Access-Control-Allow-Origin").?);
         try t.expectString("GET,POST", res.headers.get("Access-Control-Allow-Methods").?);
         try t.expectString("content-type", res.headers.get("Access-Control-Allow-Headers").?);
         try t.expectString("300", res.headers.get("Access-Control-Max-Age").?);
@@ -687,7 +687,7 @@ test "ContentType: forX" {
     try t.expectEqual(ContentType.UNKNOWN, ContentType.forFile("must.spice"));
 }
 
-test "httpz: event stream" {
+test "precisock: event stream" {
     var stream = t.Stream.init();
     defer stream.deinit();
     _ = stream.add("GET /test/stream HTTP/1.1\r\nContent-Length: 0\r\n\r\n");

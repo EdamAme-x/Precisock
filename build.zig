@@ -4,8 +4,8 @@ pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const httpz_module = b.addModule("httpz", .{
-        .source_file = .{ .path = "src/httpz.zig" },
+    const precisock_module = b.addModule("precisock", .{
+        .source_file = .{ .path = "src/precisock.zig" },
     });
 
     // setup executable
@@ -15,7 +15,7 @@ pub fn build(b: *std.Build) !void {
         .target = target,
         .optimize = optimize,
     });
-    exe.addModule("httpz", httpz_module);
+    exe.addModule("precisock", precisock_module);
     b.installArtifact(exe);
 
     const run_cmd = b.addRunArtifact(exe);
@@ -29,7 +29,7 @@ pub fn build(b: *std.Build) !void {
     run_step.dependOn(&run_cmd.step);
 
     const lib_test = b.addTest(.{
-        .root_source_file = .{ .path = "src/httpz.zig" },
+        .root_source_file = .{ .path = "src/precisock.zig" },
         .target = target,
         .optimize = optimize,
     });

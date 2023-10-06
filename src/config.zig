@@ -4,7 +4,7 @@ const response = @import("response.zig");
 
 pub const Config = struct {
     // done like this so that an external app can access it as
-    // httpz.Config.Request or httpz.Config.Response
+    // precisock.Config.Request or precisock.Config.Response
     pub const Pool = pool.Config;
     pub const Request = request.Config;
     pub const Response = response.Config;

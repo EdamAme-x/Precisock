@@ -1,7 +1,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
-const http = @import("httpz.zig");
+const http = @import("precisock.zig");
 
 const Url = @import("url.zig").Url;
 const Params = @import("params.zig").Params;

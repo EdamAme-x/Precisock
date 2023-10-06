@@ -1,13 +1,13 @@
 const std = @import("std");
-const httpz = @import("httpz");
+const precisock = @import("precisock");
 const Allocator = std.mem.Allocator;
 
 var index_file_contents: []u8 = undefined;
 
 // Started in main.zig which starts 3 servers, on 3 different ports, to showcase
-// small variations in using httpz.
+// small variations in using precisock.
 pub fn start(allocator: Allocator) !void {
-    var server = try httpz.Server().init(allocator, .{});
+    var server = try precisock.Server().init(allocator, .{});
     defer server.deinit();
     var router = server.router();
 
@@ -28,7 +28,7 @@ pub fn start(allocator: Allocator) !void {
     try server.listen();
 }
 
-fn index(_: *httpz.Request, res: *httpz.Response) !void {
+fn index(_: *precisock.Request, res: *precisock.Response) !void {
     res.body =
         \\<!DOCTYPE html>
         \\ <ul>
@@ -42,7 +42,7 @@ fn index(_: *httpz.Request, res: *httpz.Response) !void {
     ;
 }
 
-fn hello(req: *httpz.Request, res: *httpz.Response) !void {
+fn hello(req: *precisock.Request, res: *precisock.Response) !void {
     const query = try req.query();
     const name = query.get("name") orelse "stranger";
 
@@ -54,13 +54,13 @@ fn hello(req: *httpz.Request, res: *httpz.Response) !void {
     try std.fmt.format(res.writer(), "Hello {s}", .{name});
 }
 
-fn json(req: *httpz.Request, res: *httpz.Response) !void {
+fn json(req: *precisock.Request, res: *precisock.Response) !void {
     const name = req.param("name").?;
     try res.json(.{ .hello = name }, .{});
 }
 
-fn writer(req: *httpz.Request, res: *httpz.Response) !void {
-    res.content_type = httpz.ContentType.JSON;
+fn writer(req: *precisock.Request, res: *precisock.Response) !void {
+    res.content_type = precisock.ContentType.JSON;
 
     const name = req.param("name").?;
     var ws = std.json.writeStream(res.writer(), .{ .whitespace = .indent_4 });
@@ -70,30 +70,30 @@ fn writer(req: *httpz.Request, res: *httpz.Response) !void {
     try ws.endObject();
 }
 
-fn chunked(_: *httpz.Request, res: *httpz.Response) !void {
+fn chunked(_: *precisock.Request, res: *precisock.Response) !void {
     // status and headers (including content type) must be set
     // before the first call to chunk
     res.status = 200;
     res.header("A", "Header");
-    res.content_type = httpz.ContentType.TEXT;
+    res.content_type = precisock.ContentType.TEXT;
 
     try res.chunk("This is a chunk");
     try res.chunk("\r\n");
     try res.chunk("And another one");
 }
 
-fn staticFile(req: *httpz.Request, res: *httpz.Response) !void {
+fn staticFile(req: *precisock.Request, res: *precisock.Response) !void {
     var index_file = try std.fs.cwd().openFile("example/index.html", .{});
     defer index_file.close();
     res.body = try index_file.readToEndAlloc(req.arena, 100000);
 }
 
-fn cachedStaticFile(req: *httpz.Request, res: *httpz.Response) !void {
+fn cachedStaticFile(req: *precisock.Request, res: *precisock.Response) !void {
     _ = req;
     res.body = index_file_contents;
 }
 
-fn notFound(_: *httpz.Request, res: *httpz.Response) !void {
+fn notFound(_: *precisock.Request, res: *precisock.Response) !void {
     res.status = 404;
     res.body = "Not found";
 }

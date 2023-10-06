@@ -1,7 +1,7 @@
 // Internal helpers used by this library
 // If you're looking for helpers to help you mock/test
-// httpz.Request and httpz.Response, checkout testing.zig
-// which is exposed as httpz.testing.
+// precisock.Request and precisock.Response, checkout testing.zig
+// which is exposed as precisock.testing.
 const std = @import("std");
 
 const mem = std.mem;

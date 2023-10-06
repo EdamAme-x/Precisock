@@ -1,5 +1,5 @@
 const std = @import("std");
-const httpz = @import("httpz");
+const precisock = @import("precisock");
 const Allocator = std.mem.Allocator;
 
 // Our global state
@@ -9,23 +9,23 @@ const GlobalContext = struct {
     hits: usize = 0,
     l: std.Thread.Mutex = .{},
 
-    pub fn increment(self: *Self, _: *httpz.Request, res: *httpz.Response) !void {
+    pub fn increment(self: *Self, _: *precisock.Request, res: *precisock.Response) !void {
         self.l.lock();
         var hits = self.hits + 1;
         self.hits = hits;
         self.l.unlock();
 
-        res.content_type = httpz.ContentType.TEXT;
+        res.content_type = precisock.ContentType.TEXT;
         var out = try std.fmt.allocPrint(res.arena, "{d} hits", .{hits});
         res.body = out;
     }
 };
 
 // Started in main.zig which starts 3 servers, on 3 different ports, to showcase
-// small variations in using httpz.
+// small variations in using precisock.
 pub fn start(allocator: Allocator) !void {
     var ctx = GlobalContext{};
-    var server = try httpz.ServerCtx(*GlobalContext, *GlobalContext).init(allocator, .{ .pool = .{ .min = 20 }, .port = 5883 }, &ctx);
+    var server = try precisock.ServerCtx(*GlobalContext, *GlobalContext).init(allocator, .{ .pool = .{ .min = 20 }, .port = 5883 }, &ctx);
     defer server.deinit();
     var router = server.router();
     router.get("/increment", GlobalContext.increment);
