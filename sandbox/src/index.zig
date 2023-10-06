@@ -1,9 +1,9 @@
-pub fn Page(ctx) {
+pub fn Page(ctx) !void {
     result = h.html(
         {},
         h.head({ lang: "en" }, h.title({}, "Precisock Index Page")),
         h.body({}, h.h1({}, "Welcome to Precisock!"))
-    )
+    );
 }
 
 ////                         ////
